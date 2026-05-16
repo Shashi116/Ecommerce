@@ -1,6 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import '../styles/footer.css';
+import Link from 'next/link';
 
 const Footer = () => {
   return (
@@ -9,37 +8,37 @@ const Footer = () => {
         <div className="footer-grid">
           <div className="footer-column">
             <h4>About</h4>
-            <Link to="/footer-info">Contact Us</Link>
-            <Link to="/about">About Us</Link>
-            <Link to="/footer-info">Careers</Link>
-            <Link to="/footer-info">Stories</Link>
-            <Link to="/footer-info">Press</Link>
-            <Link to="/footer-info">Corporate Information</Link>
+            <Link href="/footer-info">Contact Us</Link>
+            <Link href="/about">About Us</Link>
+            <Link href="/footer-info">Careers</Link>
+            <Link href="/footer-info">Stories</Link>
+            <Link href="/footer-info">Press</Link>
+            <Link href="/footer-info">Corporate Information</Link>
           </div>
 
           <div className="footer-column">
             <h4>Group Companies</h4>
-            <Link to="/footer-info">Myntra</Link>
-            <Link to="/footer-info">Cleartrip</Link>
-            <Link to="/footer-info">Shopsy</Link>
+            <Link href="/footer-info">Myntra</Link>
+            <Link href="/footer-info">Cleartrip</Link>
+            <Link href="/footer-info">Shopsy</Link>
           </div>
 
           <div className="footer-column">
             <h4>Help</h4>
-            <Link to="/footer-info">Payments</Link>
-            <Link to="/footer-info">Shipping</Link>
-            <Link to="/footer-info">Cancellation & Returns</Link>
-            <Link to="/footer-info">FAQ</Link>
+            <Link href="/footer-info">Payments</Link>
+            <Link href="/footer-info">Shipping</Link>
+            <Link href="/footer-info">Cancellation & Returns</Link>
+            <Link href="/footer-info">FAQ</Link>
           </div>
 
           <div className="footer-column">
             <h4>Consumer Policy</h4>
-            <Link to="/footer-info">Terms Of Use</Link>
-            <Link to="/footer-info">Privacy</Link>
-            <Link to="/footer-info">Security</Link>
-            <Link to="/footer-info">Sitemap</Link>
-            <Link to="/footer-info">Grievance Redressal</Link>
-            <Link to="/footer-info">EPR Compliance</Link>
+            <Link href="/footer-info">Terms Of Use</Link>
+            <Link href="/footer-info">Privacy</Link>
+            <Link href="/footer-info">Security</Link>
+            <Link href="/footer-info">Sitemap</Link>
+            <Link href="/footer-info">Grievance Redressal</Link>
+            <Link href="/footer-info">EPR Compliance</Link>
           </div>
 
           <div className="footer-column footer-address">

@@ -1,30 +1,42 @@
+'use client';
+
 import React, { useEffect, useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { useRouter } from 'next/navigation';
 import EmptyState from '../components/ui/EmptyState';
 import Loader from '../components/ui/Loader';
-import '../styles/admin.css';
 
 const AdminOrders = () => {
-  const { user } = useContext(AuthContext);
+  const { user, authLoading } = useContext(AuthContext);
+  const router = useRouter();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+    if (!user || user.role !== 'admin') {
+      router.push('/');
+      return;
+    }
+
     const fetchOrders = async () => {
-      const res = await fetch('/api/orders', {
-        headers: { Authorization: `Bearer ${user.token}` }
-      });
+      const res = await fetch('/api/orders', { credentials: 'same-origin' });
       const data = await res.json();
       setOrders(Array.isArray(data) ? data : []);
       setLoading(false);
     };
     fetchOrders();
-  }, [user]);
+  }, [authLoading, user, router]);
+
+  if (authLoading || !user || user.role !== 'admin') return null;
 
   const updateStatus = async (id, status) => {
     const res = await fetch(`/api/orders/${id}/status`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token}` },
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
       body: JSON.stringify({ status })
     });
     if (res.ok) {

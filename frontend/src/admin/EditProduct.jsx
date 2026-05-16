@@ -1,15 +1,23 @@
+'use client';
+
 import React, { useEffect, useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useRouter } from 'next/navigation';
 
 const EditProduct = () => {
   const { id } = useParams();
-  const { user } = useContext(AuthContext);
-  const navigate = useNavigate();
+  const { user, authLoading } = useContext(AuthContext);
+  const router = useRouter();
   
   const [formData, setFormData] = useState({ name: '', description: '', price: '', category: '', stock: '' });
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && (!user || user.role !== 'admin')) {
+      router.push('/');
+    }
+  }, [authLoading, user, router]);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -19,6 +27,8 @@ const EditProduct = () => {
     };
     fetchProduct();
   }, [id]);
+
+  if (authLoading || !user || user.role !== 'admin') return null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,13 +43,13 @@ const EditProduct = () => {
 
     const res = await fetch(`/api/products/${id}`, {
       method: 'PUT',
-      headers: { Authorization: `Bearer ${user.token}` },
+      credentials: 'same-origin',
       body: data
     });
     setLoading(false);
     if (res.ok) {
       alert('Product updated successfully!');
-      navigate('/admin/products');
+      router.push('/admin/products');
     }
   };
 

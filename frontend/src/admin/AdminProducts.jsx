@@ -1,17 +1,27 @@
+'use client';
+
 import React, { useEffect, useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { Link } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import Button from '../components/ui/Button';
 import EmptyState from '../components/ui/EmptyState';
 import Loader from '../components/ui/Loader';
-import '../styles/admin.css';
 
 const AdminProducts = () => {
-  const { user } = useContext(AuthContext);
+  const { user, authLoading } = useContext(AuthContext);
+  const router = useRouter();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+    if (!user || user.role !== 'admin') {
+      router.push('/');
+      return;
+    }
+
     const fetchProducts = async () => {
       const res = await fetch('/api/products');
       const data = await res.json();
@@ -19,13 +29,15 @@ const AdminProducts = () => {
       setLoading(false);
     };
     fetchProducts();
-  }, []);
+  }, [authLoading, user, router]);
+
+  if (authLoading || !user || user.role !== 'admin') return null;
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you strictly sure you want to delete this?')) {
       const res = await fetch(`/api/products/${id}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${user.token}` }
+        credentials: 'same-origin'
       });
       if (res.ok) {
         setProducts(products.filter(p => p._id !== id));

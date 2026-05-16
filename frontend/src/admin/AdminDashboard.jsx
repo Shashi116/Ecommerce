@@ -1,32 +1,35 @@
+'use client';
+
 import React, { useEffect, useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import Button from '../components/ui/Button';
 import Loader from '../components/ui/Loader';
-import '../styles/admin.css';
 
 const AdminDashboard = () => {
-  const { user } = useContext(AuthContext);
-  const navigate = useNavigate();
+  const { user, authLoading } = useContext(AuthContext);
+  const router = useRouter();
   const [stats, setStats] = useState(null);
 
   useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+
     if (!user || user.role !== 'admin') {
-      navigate('/');
+      router.push('/');
       return;
     }
 
     const fetchStats = async () => {
       try {
-        const res = await fetch('/api/analytics', {
-          headers: { Authorization: `Bearer ${user.token}` }
-        });
+        const res = await fetch('/api/analytics', { credentials: 'same-origin' });
         const data = await res.json();
         if (res.ok) {
           setStats(data);
         } else {
           if (res.status === 401) {
-            navigate('/login');
+            router.push('/login');
           }
           setStats({ totalOrders: 0, totalProducts: 0, totalUsers: 0, totalRevenue: 0 });
         }
@@ -35,12 +38,14 @@ const AdminDashboard = () => {
       }
     };
     fetchStats();
-  }, [user, navigate]);
+  }, [authLoading, user, router]);
+
+  if (authLoading || !user || user.role !== 'admin') return null;
 
   return (
     <div className="admin-page">
       <div className="admin-hero">
-        <img src="/SahaLogo.png" alt="Logo" />
+        <img src="/sahalogo.png" alt="Logo" />
         <div>
           <h2>Admin Dashboard</h2>
           <p className="subtle-text">Welcome back, <span style={{ color: '#2B2B2B' }}>{user?.name}</span></p>
@@ -73,10 +78,10 @@ const AdminDashboard = () => {
       <div className="section">
         <h3 style={{ marginBottom: '20px', color: '#D95C47' }}>Administrative Controls</h3>
         <div className="admin-actions">
-          <Button onClick={() => navigate('/admin/add-product')}>+ Add Product</Button>
-          <Button variant="secondary" onClick={() => navigate('/admin/products')}>📦 Manage Products</Button>
-          <Button variant="secondary" onClick={() => navigate('/admin/orders')}>🚚 Manage Orders</Button>
-          <Button variant="secondary" onClick={() => navigate('/admin/users')}>👥 Users Directory</Button>
+          <Button onClick={() => router.push('/admin/add-product')}>+ Add Product</Button>
+          <Button variant="secondary" onClick={() => router.push('/admin/products')}>📦 Manage Products</Button>
+          <Button variant="secondary" onClick={() => router.push('/admin/orders')}>🚚 Manage Orders</Button>
+          <Button variant="secondary" onClick={() => router.push('/admin/users')}>👥 Users Directory</Button>
         </div>
       </div>
     </div>

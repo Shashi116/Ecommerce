@@ -1,10 +1,12 @@
-import React, { useState, useContext } from 'react';
+'use client';
+
+import React, { useEffect, useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 
 const AddProduct = () => {
-  const { user } = useContext(AuthContext);
-  const navigate = useNavigate();
+  const { user, authLoading } = useContext(AuthContext);
+  const router = useRouter();
   
   const [formData, setFormData] = useState({
     name: '', description: '', price: '', category: '', stock: ''
@@ -12,10 +14,13 @@ const AddProduct = () => {
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  if (!user || user.role !== 'admin') {
-    navigate('/');
-    return null;
-  }
+  useEffect(() => {
+    if (!authLoading && (!user || user.role !== 'admin')) {
+      router.push('/');
+    }
+  }, [authLoading, user, router]);
+
+  if (authLoading || !user || user.role !== 'admin') return null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,14 +38,14 @@ const AddProduct = () => {
     try {
       const res = await fetch('/api/products', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${user.token}` },
+        credentials: 'same-origin',
         body: data
       });
       const responseData = await res.json();
       
       if (res.ok) {
         alert('Product created successfully with Cloudinary Image URL!');
-        navigate('/');
+        router.push('/');
       } else {
         alert(responseData.message || 'Error creating product');
       }

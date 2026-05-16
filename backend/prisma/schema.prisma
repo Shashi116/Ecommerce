@@ -1,0 +1,166 @@
+// This is your Prisma schema file.
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model - for authentication and profile
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  password      String
+  role          Role      @default(USER)
+  isVerified    Boolean   @default(false)
+  otpHash       String?
+  otpExpiresAt  DateTime?
+  
+  // Relations
+  orders        Order[]
+  reviews       Review[]
+  addresses     Address[]
+  
+  // Timestamps
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@map("users")
+}
+
+// Product model - for product catalog
+model Product {
+  id            String    @id @default(cuid())
+  name          String
+  description   String    @db.Text
+  price         Float
+  category      String
+  stock         Int
+  imageUrl      String
+  ratings       Float     @default(0)
+  numReviews    Int       @default(0)
+  
+  // Relations
+  orderItems    OrderItem[]
+  reviews       Review[]
+  
+  // Timestamps
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@index([category])
+  @@map("products")
+}
+
+// Review model - for product reviews
+model Review {
+  id            String    @id @default(cuid())
+  rating        Int       @db.SmallInt
+  comment       String    @db.Text
+  name          String
+  
+  // Foreign keys
+  productId     String
+  userId        String
+  
+  // Relations
+  product       Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Timestamps
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@unique([productId, userId])
+  @@index([productId])
+  @@index([userId])
+  @@map("reviews")
+}
+
+// Address model - normalized from embedded document
+model Address {
+  id            String    @id @default(cuid())
+  fullName      String
+  street        String
+  city          String
+  postalCode    String
+  country       String
+  isDefault     Boolean   @default(false)
+  
+  // Foreign key
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Relations
+  orders        Order[]
+  
+  // Timestamps
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@index([userId])
+  @@map("addresses")
+}
+
+// Order model - for customer orders
+model Order {
+  id            String    @id @default(cuid())
+  totalAmount   Float
+  status        OrderStatus @default(PENDING)
+  paymentId     String?
+  
+  // Foreign keys
+  userId        String
+  addressId     String
+  
+  // Relations
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  address       Address   @relation(fields: [addressId], references: [id], onDelete: Restrict)
+  items         OrderItem[]
+  
+  // Timestamps
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@index([userId])
+  @@index([status])
+  @@map("orders")
+}
+
+// OrderItem model - junction table for Order-Product many-to-many
+model OrderItem {
+  id            String    @id @default(cuid())
+  qty           Int
+  price         Float     // Price at time of order
+  
+  // Foreign keys
+  orderId       String
+  productId     String
+  
+  // Relations
+  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product       Product   @relation(fields: [productId], references: [id], onDelete: Restrict)
+  
+  @@unique([orderId, productId])
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+}
+
+// Enums for type safety
+enum Role {
+  USER
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}

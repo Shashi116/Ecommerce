@@ -1,76 +1,86 @@
 <div align="center">
   <img src="https://cdn-icons-png.flaticon.com/512/3514/3514491.png" alt="Saha Traditions Logo" width="80" />
-  <h1>Saha Traditions - Full-Stack MERN E-Commerce App</h1>
-  <p>A professionally engineered, full-stack E-commerce platform built strictly using modern standard React (CRA) on the frontend and Express/MongoDB on the backend.</p>
+  <h1>Saha Traditions - Full-Stack Next.js E-Commerce App</h1>
+  <p>A full-stack e-commerce platform migrated from split MERN/CRA + Express into a Next.js app with secure API route handlers.</p>
 </div>
 
 ---
 
-## 🛠 Tech Stack Details
+## Tech Stack
 
-- **Frontend:** Pure React.js (`react-scripts`), Redux Toolkit (for Cart state management), AuthContext API (for JWT user sessions).
-- **Backend:** Node.js, Express.js architecture mapped with middleware-based routing.
-- **Database:** MongoDB (via Mongoose schemas).
-- **Features:** Unified Admin Dashboard, Direct Cloudinary Content Maps, Personal User Profiles matching mapped Order Histories.
-- **Payments:** Razorpay fully implemented (utilize your test metrics or placeholder).
-- **Cloud Storage:** Cloudinary integration for Product image uploading securely via Multer.
+- **App:** Next.js App Router, React, Redux Toolkit, AuthContext.
+- **Backend routing:** Next.js route handlers under `frontend/src/app/api`.
+- **Security:** JWT is stored in an `httpOnly`, `sameSite=lax` cookie instead of browser `localStorage`; admin/user API routes validate the cookie server-side.
+- **Database:** MongoDB via Mongoose.
+- **Payments:** Razorpay order creation and signature verification.
+- **Uploads:** Cloudinary image upload from secure API routes.
 
 ---
 
-## 🚀 Quick Start / Local Development Guide
+## Quick Start
 
-The workspace is configured beautifully using a monorepo-friendly setup with `concurrently`, enabling you to start everything from the very root folder.
+Install dependencies from the root, then run the Next.js app:
 
-### 1️⃣ Dependencies & Environments
-Make sure you have MongoDB running locally, or map it to a remote database string.
-
-Inside the `backend/` folder, ensure your `.env` looks like this:
-```env
-PORT=5000
-NODE_ENV=development
-MONGO_URI=mongodb://127.0.0.1:27017/saha-traditions
-JWT_SECRET=super_secret_key
-RAZORPAY_KEY_ID=your_key_id
-RAZORPAY_KEY_SECRET=your_key_secret
+```bash
+npm run install-all
+npm run dev
 ```
 
-From the **root folder** `saha-traditions/`, trigger a full install across environments:
+Open:
+
+```bash
+http://localhost:3000
+```
+
+Build production assets:
+
 ```bash
 npm run build
 ```
 
-### 2️⃣ Populate the Database (Seeding)
-Test the platform rapidly featuring beautiful dummy products (Unsplash) and automatic `Admin` role provisioning:
+Start the production Next server after building:
+
+```bash
+npm start
+```
+
+---
+
+## Environment Variables
+
+For local development, the Next route handlers can reuse `backend/.env` as a fallback. For deployment, define these variables on the Next.js service:
+
+```env
+MONGO_URI=mongodb://127.0.0.1:27017/saha-traditions
+JWT_SECRET=super_secret_key
+RAZORPAY_KEY_ID=your_key_id
+RAZORPAY_KEY_SECRET=your_key_secret
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_cloudinary_key
+CLOUDINARY_API_SECRET=your_cloudinary_secret
+GMAIL_USER=your_email@gmail.com
+GMAIL_PASS=your_app_password
+```
+
+---
+
+## Seed Data
+
+You can still seed the MongoDB database with the legacy backend seed script:
+
 ```bash
 npm run seed
 ```
-> **Seed Admin Access:** Email: `admin@saha-traditions.com` | Password: `password123`
 
-### 3️⃣ Run Servers Start
-Run this single command at the root to bind the Backend (Port 5000) and Frontend (Port 3000) natively:
-```bash
-npm run dev
+Seed admin access:
+
+```text
+Email: admin@saha-traditions.com
+Password: password123
 ```
 
 ---
 
-## ☁️ 1-Click Deployment (Render Free-Tier Optimized)
+## Notes
 
-The server codebase features a seamless fallback mechanic leveraging Node `process.env.NODE_ENV === "production"`. When deployed to Render as a singular instance, the Express backend hosts and correctly resolves static routes to `/frontend/build` rendering the whole platform completely free on 1 Node server.
-
-1. Publish this repo onto **GitHub**.
-2. Go to [Render Dashboard](https://dashboard.render.com).
-3. Connect Repo -> Create a **Web Service**.
-4. Configure Build Command:
-   `npm run render-build` 
-   *(This cleanly installs API + UI node_modules then generates `react-scripts build`)*
-5. Configure Start Command:
-   `npm start`
-6. Open **Advanced > Environment Variables** and map your `.env` fields heavily defining `NODE_ENV = production`.
-7. Hit **Deploy**. The robust path resolving inside `/backend/server.js` hosts it fluidly!
-
----
-
-## 📄 Postman Documentations
-This repository includes a fully-scaffolded API testing toolkit: **`SahaTraditions_Postman_Collection.json`**. 
-Simply Import this file directly into the local Postman IDE. It features variables like `{{token}}` properly mapped to effortlessly check protected admin/user/order payloads. Happy coding!
+The `backend/` folder remains for the seed script and historical Express reference, but runtime traffic now goes through Next.js pages and API route handlers in `frontend/`.

@@ -2,12 +2,12 @@
   "name": "saha-traditions",
   "version": "1.0.0",
   "author": "Varun Likhitkar",
-  "description": "Full-Stack MERN E-Commerce App",
+  "description": "Full-stack Next.js E-Commerce App with secure API routes",
   "scripts": {
     "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
-    "build": "cd frontend && npm install && npm run build",
-    "start": "cd backend && npm start",
-    "dev": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "build": "npm --prefix frontend run build",
+    "start": "npm --prefix frontend run start",
+    "dev": "npm --prefix frontend run dev",
     "start:backend": "npm --prefix backend run dev",
     "start:frontend": "npm --prefix frontend run dev",
     "seed": "npm --prefix backend run seed"

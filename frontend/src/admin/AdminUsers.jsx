@@ -1,20 +1,32 @@
+'use client';
+
 import React, { useEffect, useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { useRouter } from 'next/navigation';
 
 const AdminUsers = () => {
-  const { user } = useContext(AuthContext);
+  const { user, authLoading } = useContext(AuthContext);
+  const router = useRouter();
   const [users, setUsers] = useState([]);
 
   useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+    if (!user || user.role !== 'admin') {
+      router.push('/');
+      return;
+    }
+
     const fetchUsers = async () => {
-      const res = await fetch('/api/auth/users', {
-        headers: { Authorization: `Bearer ${user.token}` }
-      });
+      const res = await fetch('/api/auth/users', { credentials: 'same-origin' });
       const data = await res.json();
       setUsers(Array.isArray(data) ? data : []);
     };
     fetchUsers();
-  }, [user]);
+  }, [authLoading, user, router]);
+
+  if (authLoading || !user || user.role !== 'admin') return null;
 
   return (
     <div style={containerStyle}>
