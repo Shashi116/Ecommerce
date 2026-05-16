@@ -1,24 +1,25 @@
+'use client';
+
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import Button from './ui/Button';
 import Badge from './ui/Badge';
-import '../styles/product.css';
 
 const ProductCard = ({ product }) => {
   const [wishlisted, setWishlisted] = useState(false);
-  const navigate = useNavigate();
+  const router = useRouter();
 
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem('wishlist') || '[]');
+    const stored = JSON.parse(window.localStorage.getItem('wishlist') || '[]');
     setWishlisted(stored.includes(product._id));
   }, [product._id]);
 
   const toggleWishlist = () => {
-    const stored = JSON.parse(localStorage.getItem('wishlist') || '[]');
+    const stored = JSON.parse(window.localStorage.getItem('wishlist') || '[]');
     const updated = stored.includes(product._id)
       ? stored.filter((id) => id !== product._id)
       : [...stored, product._id];
-    localStorage.setItem('wishlist', JSON.stringify(updated));
+    window.localStorage.setItem('wishlist', JSON.stringify(updated));
     setWishlisted(updated.includes(product._id));
   };
 
@@ -27,11 +28,11 @@ const ProductCard = ({ product }) => {
       className="product-card"
       role="button"
       tabIndex={0}
-      onClick={() => navigate(`/product/${product._id}`)}
+      onClick={() => router.push(`/product/${product._id}`)}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
-          navigate(`/product/${product._id}`);
+          router.push(`/product/${product._id}`);
         }
       }}
       aria-label={`View details for ${product.name}`}

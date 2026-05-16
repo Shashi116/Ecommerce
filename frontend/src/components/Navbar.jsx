@@ -1,14 +1,17 @@
+'use client';
+
 import React, { useContext, useEffect, useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import Link from 'next/link';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { AuthContext } from '../context/AuthContext';
 import { useSelector } from 'react-redux';
-import '../styles/navbar.css';
 
 const Navbar = () => {
   const { user, logout } = useContext(AuthContext);
   const cartItems = useSelector((state) => state.cart.cartItems);
-  const navigate = useNavigate();
-  const location = useLocation();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
 
@@ -17,21 +20,20 @@ const Navbar = () => {
     ? firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase()
     : '';
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const handleLogout = async () => {
+    await logout();
+    router.push('/login');
     setMenuOpen(false);
   };
 
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    setSearchValue(params.get('q') || '');
-  }, [location.search]);
+    setSearchValue(searchParams.get('q') || '');
+  }, [searchParams, pathname]);
 
   const handleSearchSubmit = (event) => {
     event.preventDefault();
     const query = searchValue.trim();
-    navigate(query ? `/?q=${encodeURIComponent(query)}` : '/');
+    router.push(query ? `/?q=${encodeURIComponent(query)}` : '/');
     setMenuOpen(false);
   };
 
@@ -39,9 +41,9 @@ const Navbar = () => {
     <nav className="navbar">
       <div className="navbar-actions">
         <div className="navbar-brand">
-          <Link to="/" aria-label="Saha Traditions home">
+          <Link href="/" aria-label="Saha Traditions home">
             <img
-              src="/SahaLogo.png"
+              src="/sahalogo.png"
               alt="Saha Traditions"
               style={{ height: '36px', width: '36px', borderRadius: '8px', objectFit: 'cover', filter: 'drop-shadow(0 2px 8px rgba(217, 92, 71, 0.35))' }}
             />
@@ -70,20 +72,20 @@ const Navbar = () => {
       </form>
       <ul className={`navbar-links ${menuOpen ? 'open' : ''}`}>
         <li>
-          <Link to="/cart" onClick={() => setMenuOpen(false)}>
+          <Link href="/cart" onClick={() => setMenuOpen(false)}>
             Cart <span className="navbar-badge">{cartItems.length}</span>
           </Link>
         </li>
         {user ? (
           <>
-            <li><Link to="/profile" onClick={() => setMenuOpen(false)}>Hi, {displayName}</Link></li>
-            {user.role === 'admin' && <li><Link to="/admin" onClick={() => setMenuOpen(false)}>Admin</Link></li>}
+            <li><Link href="/profile" onClick={() => setMenuOpen(false)}>Hi, {displayName}</Link></li>
+            {user.role === 'admin' && <li><Link href="/admin" onClick={() => setMenuOpen(false)}>Admin</Link></li>}
             <li><button onClick={handleLogout} className="btn-logout">Logout</button></li>
           </>
         ) : (
           <>
-            <li><Link to="/login" onClick={() => setMenuOpen(false)}>Login</Link></li>
-            <li><Link to="/register" className="btn-signup" onClick={() => setMenuOpen(false)}>Sign Up</Link></li>
+            <li><Link href="/login" onClick={() => setMenuOpen(false)}>Login</Link></li>
+            <li><Link href="/register" className="btn-signup" onClick={() => setMenuOpen(false)}>Sign Up</Link></li>
           </>
         )}
       </ul>

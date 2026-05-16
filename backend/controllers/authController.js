@@ -1,4 +1,4 @@
-const User = require('../models/User');
+const { prisma } = require('../config/prisma');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const sendEmail = require('../utils/sendEmail');
@@ -56,43 +56,54 @@ const registerUser = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    const userExists = await User.findOne({ email });
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: 'Name, email, and password are required.' });
+    }
+
+    // Check if user exists
+    const userExists = await prisma.user.findUnique({
+      where: { email },
+    });
+
     if (userExists && userExists.isVerified) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
     const otp = generateOtp();
-    const otpHash = await bcrypt.hash(otp, 10);
+    const otpHash = await bcrypt.hash(otp, salt);
     const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
+    // Update or create user
     if (userExists && !userExists.isVerified) {
-      userExists.name = name || userExists.name;
-      userExists.password = password ? await bcrypt.hash(password, 10) : userExists.password;
-      userExists.otpHash = otpHash;
-      userExists.otpExpiresAt = otpExpiresAt;
-      await userExists.save();
-      await sendOtpEmail({ name: userExists.name, email: userExists.email, otp });
-      return res.status(200).json({
-        message: 'OTP sent to email. Please verify to continue.',
-        email: userExists.email
+      await prisma.user.update({
+        where: { email },
+        data: {
+          name,
+          password: passwordHash,
+          otpHash,
+          otpExpiresAt,
+        },
+      });
+    } else {
+      await prisma.user.create({
+        data: {
+          name,
+          email,
+          password: passwordHash,
+          otpHash,
+          otpExpiresAt,
+          isVerified: false,
+        },
       });
     }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-      otpHash,
-      otpExpiresAt,
-      isVerified: false
-    });
 
     await sendOtpEmail({ name, email, otp });
 
     return res.status(201).json({
       message: 'OTP sent to email. Please verify to continue.',
-      email: user.email
+      email,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -102,11 +113,15 @@ const registerUser = async (req, res) => {
 const verifyOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
+
     if (!email || !otp) {
       return res.status(400).json({ message: 'Email and OTP are required.' });
     }
 
-    const user = await User.findOne({ email });
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
     if (!user) return res.status(404).json({ message: 'User not found.' });
     if (user.isVerified) return res.status(400).json({ message: 'User already verified.' });
     if (!user.otpHash || !user.otpExpiresAt) {
@@ -119,10 +134,14 @@ const verifyOtp = async (req, res) => {
     const isMatch = await bcrypt.compare(otp.toString(), user.otpHash);
     if (!isMatch) return res.status(400).json({ message: 'Invalid OTP.' });
 
-    user.isVerified = true;
-    user.otpHash = undefined;
-    user.otpExpiresAt = undefined;
-    await user.save();
+    await prisma.user.update({
+      where: { email },
+      data: {
+        isVerified: true,
+        otpHash: null,
+        otpExpiresAt: null,
+      },
+    });
 
     return res.json({ message: 'Account verified. You can now login.' });
   } catch (error) {
@@ -133,18 +152,32 @@ const verifyOtp = async (req, res) => {
 const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email });
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
 
     if (user && (await bcrypt.compare(password, user.password))) {
       if (!user.isVerified) {
         return res.status(403).json({ message: 'Please verify your account before logging in.' });
       }
+
+      const token = generateToken(user.id);
+
+      const cookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'Strict' : 'Lax',
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+      };
+
+      res.cookie('authToken', token, cookieOptions);
+
       res.json({
-        _id: user._id,
+        _id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
-        token: generateToken(user._id)
+        token,
       });
     } else {
       res.status(401).json({ message: 'Invalid email or password' });
@@ -156,11 +189,51 @@ const loginUser = async (req, res) => {
 
 const getUsers = async (req, res) => {
   try {
-    const users = await User.find({}).select('-password');
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        isVerified: true,
+        createdAt: true,
+      },
+    });
     res.json(users);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-module.exports = { registerUser, verifyOtp, loginUser, getUsers };
+const getMe = async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        isVerified: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const logout = async (req, res) => {
+  try {
+    res.json({ message: 'Logged out successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = { registerUser, verifyOtp, loginUser, getUsers, getMe, logout };
