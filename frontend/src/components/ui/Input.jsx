@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { LuEye, LuEyeClosed } from 'react-icons/lu';
 
 const Input = ({
   label,
@@ -7,9 +8,15 @@ const Input = ({
   helperText,
   className = '',
   inputClassName = '',
+  type = 'text',
   ...props
 }) => {
   const inputId = id || props.name;
+
+  const [showPassword, setShowPassword] = useState(false);
+
+  const isPasswordField = type === 'password';
+
   return (
     <div className={`form-field ${error ? 'has-error' : ''} ${className}`.trim()}>
       {label && (
@@ -17,14 +24,36 @@ const Input = ({
           {label}
         </label>
       )}
-      <input
-        id={inputId}
-        className={`form-input ${inputClassName}`.trim()}
-        aria-invalid={Boolean(error)}
-        aria-describedby={error ? `${inputId}-error` : undefined}
-        {...props}
-      />
-      {helperText && !error && <span className="form-helper">{helperText}</span>}
+
+      <div className="input-wrapper">
+        <input
+          id={inputId}
+          type={
+            isPasswordField
+              ? (showPassword ? 'text' : 'password')
+              : type
+          }
+          className={`form-input ${inputClassName}`.trim()}
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? `${inputId}-error` : undefined}
+          {...props}
+        />
+
+        {isPasswordField && (
+          <button
+            type="button"
+            className="password-toggle"
+            onClick={() => setShowPassword(prev => !prev)}
+          >
+            {showPassword ? <LuEyeClosed size={12}/> : <LuEye size={12}/>}
+          </button>
+        )}
+      </div>
+
+      {helperText && !error && (
+        <span className="form-helper">{helperText}</span>
+      )}
+
       {error && (
         <span className="form-error" id={`${inputId}-error`}>
           {error}

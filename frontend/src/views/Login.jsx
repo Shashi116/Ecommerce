@@ -7,6 +7,7 @@ import { AuthContext } from "../context/AuthContext";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
 import { FcGoogle } from "react-icons/fc";
+import authService from "../services/auth.service";
 
 const Login = ({ handleAuthLogin }) => {
   const [email, setEmail] = useState("");
@@ -14,12 +15,17 @@ const Login = ({ handleAuthLogin }) => {
   const { login } = useContext(AuthContext);
   const router = useRouter();
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleOAuth = async () => {
     try {
+      setLoading(true);
       await handleAuthLogin();
     } catch (err) {
       console.error(err);
+      setError("Google login failed. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -31,21 +37,14 @@ const Login = ({ handleAuthLogin }) => {
       return;
     }
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        login(data);
-        router.push("/");
-      } else {
-        setError(data.message || "Login failed.");
-      }
+      setLoading(true);
+      const data = await authService.login(email, password);
+      login(data);
+      router.push("/");
     } catch (error) {
-      console.error(error);
-      setError("Login failed. Please try again.");
+      setError(error.message || "Login failed. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 

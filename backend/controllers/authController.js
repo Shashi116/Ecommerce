@@ -236,4 +236,104 @@ const logout = async (req, res) => {
   }
 };
 
-module.exports = { registerUser, verifyOtp, loginUser, getUsers, getMe, logout };
+/**
+ * Firebase Login/Register
+ * Called when user logs in via Google OAuth
+ * Creates user if doesn't exist, updates if exists
+ */
+const firebaseLogin = async (req, res) => {
+  try {
+    const { token, email, name } = req.body;
+
+    if (!token || !email) {
+      return res.status(400).json({ message: 'Firebase token and email are required' });
+    }
+
+    try {
+      const admin = require('../config/firebase');
+      // Verify Firebase token
+      const decodedToken = await admin.auth().verifyIdToken(token);
+
+      if (decodedToken.email !== email) {
+        return res.status(401).json({ message: 'Token email does not match' });
+      }
+
+      // Check if user exists
+      let user = await prisma.user.findUnique({
+        where: { email },
+      });
+
+      // If user doesn't exist, create new user
+      if (!user) {
+        user = await prisma.user.create({
+          data: {
+            email,
+            name: name || 'User',
+            password: '', // No password for Firebase users
+            isVerified: true, // Firebase verified
+            role: 'USER', // Default role
+          },
+        });
+      } else {
+        // If user exists but not verified, mark as verified
+        if (!user.isVerified) {
+          user = await prisma.user.update({
+            where: { email },
+            data: { isVerified: true },
+          });
+        }
+      }
+
+      // Generate JWT token
+      const jwtToken = generateToken(user.id);
+
+      const cookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'Strict' : 'Lax',
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+      };
+
+      res.cookie('authToken', jwtToken, cookieOptions);
+
+      res.json({
+        _id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        token: jwtToken,
+      });
+    } catch (firebaseError) {
+      console.error('Firebase verification error:', firebaseError.message);
+      return res.status(401).json({ message: 'Invalid Firebase token' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/**
+ * Set user as admin (internal use only)
+ * Called from backend for specific email: traditionssaha@gmail.com
+ */
+const setAdminRole = async (email) => {
+  try {
+    const adminEmail = 'traditionssaha@gmail.com';
+
+    if (email !== adminEmail) {
+      return false; // Not admin email
+    }
+
+    await prisma.user.updateMany({
+      where: { email: adminEmail },
+      data: { role: 'ADMIN' },
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Error setting admin role:', error.message);
+    return false;
+  }
+};
+
+module.exports = { registerUser, verifyOtp, loginUser, firebaseLogin, getUsers, getMe, logout, setAdminRole };
